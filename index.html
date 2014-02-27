@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
+<script type="text/javascript" src="utils.js"></script>
+<script type="text/javascript" src="player.js"></script>
+	<script type="text/javascript">
+	
+		var stage;
+		var player;
+		var ground;
+		var scale = (112 + 56) / 1.8;
+		var gravity = 10;
+		var right = false, left = false;
+		
+		function init() {
+			var canvas = document.getElementById("demoCanvas");
+			window.addEventListener('keydown', dokeydown, true);
+			window.addEventListener('keyup', dokeyup, true);
+			
+			this.stage = new createjs.Stage("demoCanvas");
+			
+			ground = canvas.height - 20;
+			var groundRect = new createjs.Shape();
+			groundRect.graphics.beginFill("brown").drawRect(0, ground, canvas.width, 20);
+			this.stage.addChild(groundRect);
+			
+			var playerTorso = new createjs.SpriteSheet({
+				images: ["torso_sprite_6.png"],
+				frames: {width: 103, height: 112, regX:45, regY:110},
+				animations: {    
+					run: {
+					 frames:[2, 3, 2, 4, 5, 4],
+					 next: "run",
+					 speed: 0.35
+					 },
+					backward_run: {
+					 frames:[4, 5, 4, 2, 3, 2],
+					 next: "backward_run",
+					 speed: 0.35
+					 },
+					step: 1,
+					stand: 0,
+					jump: 3
+				}
+			});
+			var playerHead = new createjs.Bitmap("head.png");
+			playerHead.x = 0;
+			playerHead.y = -106;
+			playerHead.regX = 15;
+			playerHead.regY = playerHead.image.height - 4;
+			playerHead.eyesX = playerHead.regX;
+			playerHead.eyesY = -playerHead.image.height/2;
+			var sprite = new createjs.Sprite(playerTorso, "run");
+			this.player = new Character(sprite, playerHead);
+			this.player.x = 200;
+			this.player.y = 400;
+			this.player.velocityX = 2.5;
+			this.player.velocityY = 0.0;
+			this.player.jumpVelocity = 4.0;
+			this.player.midAir = false;
+			this.player.way = 0;
+			
+			var forearm = new createjs.Bitmap("arm.png");
+			forearm.regX = 5;
+			forearm.regY = 5;
+			forearm.length = Utils.vectorLength(forearm.image.width - forearm.regX, forearm.image.height - forearm.regY);
+			forearm.x = 16;
+			forearm.y = 15;
+			var sleeve = new createjs.Bitmap("sleeve.png");
+			sleeve.regX = 5;
+			sleeve.regY = 5;
+			sleeve.length = Utils.vectorLength(sleeve.image.width - sleeve.regX, sleeve.image.height - sleeve.regY);
+			var armLeft = new createjs.Container();
+			armLeft.addChild(forearm, sleeve);
+			armLeft.x = 22;
+			armLeft.y = -100;
+			armLeft.length = forearm.length + sleeve.length;
+			
+			armRight = armLeft.clone(true);
+			armRight.x = -22;
+			armRight.y = -100;
+			armRight.length = forearm.length + sleeve.length;
+			
+			this.player.addChild(armLeft);
+			this.player.addChild(armRight);
+			this.player.swapChildren(armLeft, playerHead);
+			
+			this.player.reg_lookAt = this.player.lookAt;
+			this.player.lookAt = function (x, y) {
+				var rot = this.reg_lookAt(x,y);
+				var rad = rot / 57.2957795;
+				var F1 = {
+					x: this.x + armLeft.x + sleeve.regX,
+					y: this.y + armLeft.y + sleeve.regY,
+				};
+				var F2 = {
+					x: this.x + armRight.x + sleeve.regX,
+					y: this.y + armRight.y + sleeve.regY,
+				};
+				
+				var a = Math.abs(F1.x - F2.x);
+				var b = 2 * Math.sqrt(Math.pow(armLeft.length, 2) - Math.pow(a/2,2));
+				a = a + 2 * (armLeft.length - a);
+				var elipseCenter = {
+					x: 0,
+					y: 0
+				}
+				elipseCenter.x = F1.x + (F1.x - F2.x)/2;
+				elipseCenter.y = F1.y + (F1.y - F2.y)/2;
+				var elipseX = a * Math.cos(rad);
+				var elipseY = b * Math.sin(rad);
+//  				console.log(elipseX + "x" + elipseY);
+				var leftRot = 57.2957795 * Math.atan2(elipseCenter.y + elipseY - F1.y, elipseCenter.x + elipseX - F1.x);
+				var rigthRot = 57.2957795 * Math.atan2(elipseCenter.y + elipseY - F2.y, elipseCenter.x + elipseX - F2.x);
+				armLeft.rotation = leftRot;
+				armRight.rotation = rigthRot;
+//				console.log(rot);
+			}
+			
+//				this.player.stand();
+			
+			this.stage.addChild(this.player);
+			
+			createjs.Ticker.addEventListener("tick", dotick);
+			createjs.Ticker.timingMode = createjs.Ticker.RAF_SYNCHED;
+			createjs.Ticker.setFPS(30);
+			this.stage.on("stagemousemove", mouseMoved);
+		}
+		
+		function dotick(event) {
+		
+			var sec = event.delta/1000;
+			if (player.y < ground) {
+				player.velocityY += gravity * sec;
+				player.midAir = true;
+			} else {
+				player.midAir = false;
+			}
+			
+			if (player.velocityY > 0.00001 || player.velocityY < -0.00001) {
+				player.y += scale * player.velocityY * sec;
+				if (player.y > ground) {
+					player.y = ground;
+					player.velocityY = 0;
+				}
+				if (!player.isJumping())
+					player.jump();
+			}
+			player.way = 0;
+			if(right)
+				player.way += 1;
+			if(left)
+				player.way -= 1;
+			player.x += scale * player.velocityX * player.way * sec;
+			if (player.x > 500)
+				player.x = 0;
+			else if (player.x < 0)
+				player.x = 500;
+			
+			if (!player.midAir) {
+				if (!player.isRunning()) {
+					if (player.way != 0)
+						player.run();
+				}
+				if (player.way == 0 && !player.isStanding()) {
+					player.stand();
+				}
+			} 
+			
+			this.stage.update();
+		}
+		
+		function dokeydown(event) {
+			if (event.keyCode == 37) {
+				left = true;
+			} else if (event.keyCode == 39) {
+				right = true;
+			} else if (event.keyCode == 38) {
+				player.jump();
+				player.velocityY = -4.0;
+				//jump();
+			}
+			return false;
+		}
+		
+		function dokeyup(event) {
+			if (event.keyCode == 37) {
+				left = false;
+			} else if (event.keyCode == 39) {
+				right = false;
+			}
+			return false;
+		}
+		
+		function mouseMoved(event) {
+			player.lookAt(event.stageX, event.stageY);
+		}
+	</script>
+</head>
+<body onLoad="init()">
+	<canvas id="demoCanvas" width="500" height="500">
+	No canvas support :(
+	</canvas>
+</body>
+</html>

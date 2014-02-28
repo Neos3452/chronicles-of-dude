@@ -2,31 +2,61 @@
 <html>
 <head>
 <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
+<script src="http://code.createjs.com/preloadjs-0.4.1.min.js"></script>
 <script type="text/javascript" src="utils.js"></script>
 <script type="text/javascript" src="player.js"></script>
 	<script type="text/javascript">
 	
 		var stage;
+		var canvas;
+		var gamepadText;
 		var player;
 		var ground;
 		var scale = (112 + 56) / 1.8;
 		var gravity = 10;
-		var right = false, left = false;
+		var right = false, left = false, up = false;
+		var mouseLocation;
+		
+		var loadQueue;
+		var playerGamepad = undefined;
 		
 		function init() {
-			var canvas = document.getElementById("demoCanvas");
+		    this.loadQueue = new createjs.LoadQueue(false);
+		    this.loadQueue.on("complete", loadingComplete, this);
+		    this.loadQueue.loadManifest([
+		        {id:"torso",    src:"torso_sprite_6.png"},
+		        {id:"head",     src:"head.png"},
+		        {id:"sleeve",   src:"sleeve.png"},
+		        {id:"forearm",  src:"arm.png"}
+		    ]);
+		    this.loadQueue.load();
+		}
+		
+		function loadingComplete() {
+		    console.log("loading complete!");
+			this.canvas = document.getElementById("demoCanvas");
+			this.mouseLocation = {
+		        x: canvas.width,
+		        y: canvas.height/2
+		    };
+			this.gamepadText = document.getElementById("noGamepad");
 			window.addEventListener('keydown', dokeydown, true);
 			window.addEventListener('keyup', dokeyup, true);
+			window.addEventListener('webkitgamepadconnected',
+                              onGamepadConnect);
+            window.addEventListener('webkitgamepaddisconnected',
+                              onGamepadDisconnect);
 			
 			this.stage = new createjs.Stage("demoCanvas");
 			
-			ground = canvas.height - 20;
+			ground = this.canvas.height - 20;
 			var groundRect = new createjs.Shape();
-			groundRect.graphics.beginFill("brown").drawRect(0, ground, canvas.width, 20);
+			groundRect.graphics.beginFill("brown").drawRect(0, ground, this.canvas.width, 20);
 			this.stage.addChild(groundRect);
 			
+			
 			var playerTorso = new createjs.SpriteSheet({
-				images: ["torso_sprite_6.png"],
+				images: [loadQueue.getResult("torso")],
 				frames: {width: 103, height: 112, regX:45, regY:110},
 				animations: {    
 					run: {
@@ -44,7 +74,8 @@
 					jump: 3
 				}
 			});
-			var playerHead = new createjs.Bitmap("head.png");
+			this.runAnimation = playerTorso.getAnimation("run");
+			var playerHead = new createjs.Bitmap(loadQueue.getResult("head"));
 			playerHead.x = 0;
 			playerHead.y = -106;
 			playerHead.regX = 15;
@@ -54,20 +85,22 @@
 			var sprite = new createjs.Sprite(playerTorso, "run");
 			this.player = new Character(sprite, playerHead);
 			this.player.x = 200;
-			this.player.y = 400;
+			this.player.y = 0;
 			this.player.velocityX = 2.5;
 			this.player.velocityY = 0.0;
 			this.player.jumpVelocity = 4.0;
 			this.player.midAir = false;
 			this.player.way = 0;
+			this.player.eyesY = playerHead.eyesY;
+			this.player.height = 112;
 			
-			var forearm = new createjs.Bitmap("arm.png");
+			var forearm = new createjs.Bitmap(loadQueue.getResult("forearm"));
 			forearm.regX = 5;
 			forearm.regY = 5;
 			forearm.length = Utils.vectorLength(forearm.image.width - forearm.regX, forearm.image.height - forearm.regY);
 			forearm.x = 16;
 			forearm.y = 15;
-			var sleeve = new createjs.Bitmap("sleeve.png");
+			var sleeve = new createjs.Bitmap(loadQueue.getResult("sleeve"));
 			sleeve.regX = 5;
 			sleeve.regY = 5;
 			sleeve.length = Utils.vectorLength(sleeve.image.width - sleeve.regX, sleeve.image.height - sleeve.regY);
@@ -88,15 +121,14 @@
 			
 			this.player.reg_lookAt = this.player.lookAt;
 			this.player.lookAt = function (x, y) {
-				var rot = this.reg_lookAt(x,y);
-				var rad = rot / 57.2957795;
+				this.reg_lookAt(x,y);
 				var F1 = {
-					x: this.x + armLeft.x + sleeve.regX,
-					y: this.y + armLeft.y + sleeve.regY,
+					x: this.x + armLeft.x,
+					y: this.y + armLeft.y,
 				};
 				var F2 = {
-					x: this.x + armRight.x + sleeve.regX,
-					y: this.y + armRight.y + sleeve.regY,
+					x: this.x + armRight.x,
+					y: this.y + armRight.y,
 				};
 				
 				var a = Math.abs(F1.x - F2.x);
@@ -106,15 +138,24 @@
 					x: 0,
 					y: 0
 				}
-				elipseCenter.x = F1.x + (F1.x - F2.x)/2;
-				elipseCenter.y = F1.y + (F1.y - F2.y)/2;
-				var elipseX = a * Math.cos(rad);
-				var elipseY = b * Math.sin(rad);
-//  				console.log(elipseX + "x" + elipseY);
+				elipseCenter.x = F1.x - (F1.x - F2.x)/2;
+				elipseCenter.y = F1.y - (F1.y - F2.y)/2;
+	            var rot = Math.atan2(y - elipseCenter.y, x - elipseCenter.x);
+				var elipseX = a * Math.cos(rot);
+				var elipseY = b * Math.sin(rot);
 				var leftRot = 57.2957795 * Math.atan2(elipseCenter.y + elipseY - F1.y, elipseCenter.x + elipseX - F1.x);
 				var rigthRot = 57.2957795 * Math.atan2(elipseCenter.y + elipseY - F2.y, elipseCenter.x + elipseX - F2.x);
-				armLeft.rotation = leftRot;
-				armRight.rotation = rigthRot;
+				if (this.scaleX < 0) {
+			        leftRot -= 180;
+			        leftRot *= -1;
+			        rigthRot -= 180;
+			        rigthRot *= -1;
+			        armRight.rotation = -45 + leftRot;
+				    armLeft.rotation = -45 + rigthRot;
+			    } else {
+				    armLeft.rotation = -45 + leftRot;
+				    armRight.rotation = -45 + rigthRot;
+				}
 //				console.log(rot);
 			}
 			
@@ -129,7 +170,7 @@
 		}
 		
 		function dotick(event) {
-		
+		    handleInput();
 			var sec = event.delta/1000;
 			if (player.y < ground) {
 				player.velocityY += gravity * sec;
@@ -147,16 +188,18 @@
 				if (!player.isJumping())
 					player.jump();
 			}
+			/*
 			player.way = 0;
 			if(right)
 				player.way += 1;
 			if(left)
 				player.way -= 1;
+			*/
 			player.x += scale * player.velocityX * player.way * sec;
-			if (player.x > 500)
+			if (player.x > canvas.width)
 				player.x = 0;
 			else if (player.x < 0)
-				player.x = 500;
+				player.x = canvas.width;
 			
 			if (!player.midAir) {
 				if (!player.isRunning()) {
@@ -171,15 +214,33 @@
 			this.stage.update();
 		}
 		
+		function handleInput() {
+		    var jump = up, speed = 0.0, lookX = mouseLocation.x, lookY = mouseLocation.y;
+		    if (left) speed += -1.0;
+		    if (right) speed += 1.0;
+		    up = false;
+		    if(playerGamepad) {
+		        speed = playerGamepad.axes[0];
+		        jump = (playerGamepad.buttons[0] > 0.5);
+		        var lookup = playerGamepad.axes[1];
+		        runAnimation.speed = 0.3 * Math.abs(speed) + 0.10;
+		        lookX = player.x + player.scaleX * 100 + 1000 * speed;
+		        lookY = player.y - player.height + 1000 * lookup;
+		    }
+		    player.way = speed;
+			player.lookAt(lookX, lookY);
+	        if (jump && !player.midAir) {
+		        player.velocityY = -4.0;
+		    }
+		}
+		
 		function dokeydown(event) {
 			if (event.keyCode == 37) {
 				left = true;
 			} else if (event.keyCode == 39) {
 				right = true;
 			} else if (event.keyCode == 38) {
-				player.jump();
-				player.velocityY = -4.0;
-				//jump();
+			    up = true;
 			}
 			return false;
 		}
@@ -194,12 +255,30 @@
 		}
 		
 		function mouseMoved(event) {
-			player.lookAt(event.stageX, event.stageY);
+		    mouseLocation.x = event.stageX;
+		    mouseLocation.y = event.stageY;
+	    }
+		
+		function onGamepadConnect(event) {
+		    if (event.index === 0) {
+		        playerGamepad = event.gamepad;
+		        gamepadText.style.visibility = "hidden";
+		        canvas.style.visibility = "visible";
+		    }
+		}
+		
+		function onGamepadDisconnect(event) {
+		    if (event.index === 0) {
+		        playerGamepad = undefined;
+		        gamepadText.style.visibility = "visible";
+		        canvas.style.visibility = "hidden";
+		    }
 		}
 	</script>
 </head>
 <body onLoad="init()">
-	<canvas id="demoCanvas" width="500" height="500">
+    <p id="noGamepad" style="visibility:visible;">No gamepad connected, please connect gamepad</p>
+	<canvas id="demoCanvas" width="700" height="300" style="visibility:hidden;">
 	No canvas support :(
 	</canvas>
 </body>

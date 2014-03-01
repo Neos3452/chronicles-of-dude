@@ -27,7 +27,8 @@
 		        {id:"torso",    src:"torso_sprite_6.png"},
 		        {id:"head",     src:"head.png"},
 		        {id:"sleeve",   src:"sleeve.png"},
-		        {id:"forearm",  src:"arm.png"}
+		        {id:"forearm",  src:"arm.png"},
+		        {id:"weapon",	src:"weapon.png"}
 		    ]);
 		    this.loadQueue.load();
 		}
@@ -35,6 +36,7 @@
 		function loadingComplete() {
 		    console.log("loading complete!");
 			this.canvas = document.getElementById("demoCanvas");
+			//this.canvas.getContext("2d").translate(0.5, 0.5);
 			this.mouseLocation = {
 		        x: canvas.width,
 		        y: canvas.height/2
@@ -115,13 +117,26 @@
 			armRight.y = -100;
 			armRight.length = forearm.length + sleeve.length;
 			
+			var weapon = new createjs.Bitmap(loadQueue.getResult("weapon"));
+			weapon.regX = 42;
+			weapon.regY = 21;
+			
 			this.player.addChild(armLeft);
+			this.player.addChild(weapon);
 			this.player.addChild(armRight);
 			this.player.swapChildren(armLeft, playerHead);
 			
 			this.player.reg_lookAt = this.player.lookAt;
 			this.player.lookAt = function (x, y) {
+				this.scaleX = 1;
+				var change = false;
+				if (x < this.x) {
+					var dx = this.x - x;
+					x += 2*dx;
+					change = true;
+				}
 				this.reg_lookAt(x,y);
+				this.scaleX = 1;
 				var F1 = {
 					x: this.x + armLeft.x,
 					y: this.y + armLeft.y,
@@ -140,23 +155,40 @@
 				}
 				elipseCenter.x = F1.x - (F1.x - F2.x)/2;
 				elipseCenter.y = F1.y - (F1.y - F2.y)/2;
-	            var rot = Math.atan2(y - elipseCenter.y, x - elipseCenter.x);
-				var elipseX = a * Math.cos(rot);
-				var elipseY = b * Math.sin(rot);
+				var direction = {
+					x: x - elipseCenter.x,
+					y: y - elipseCenter.y
+				};
+				var l = Utils.vectorLength(direction.x, direction.y);
+				direction.x /= l;
+				direction.y /= l;
+	            var rot = Math.atan2(direction.y, direction.x);
+				var elipseX = a/2 * Math.cos(rot);
+				var elipseY = b/2 * Math.sin(rot);
 				var leftRot = 57.2957795 * Math.atan2(elipseCenter.y + elipseY - F1.y, elipseCenter.x + elipseX - F1.x);
 				var rigthRot = 57.2957795 * Math.atan2(elipseCenter.y + elipseY - F2.y, elipseCenter.x + elipseX - F2.x);
 				if (this.scaleX < 0) {
+				/*
 			        leftRot -= 180;
 			        leftRot *= -1;
 			        rigthRot -= 180;
 			        rigthRot *= -1;
+			        */
 			        armRight.rotation = -45 + leftRot;
 				    armLeft.rotation = -45 + rigthRot;
+					weapon.rotation = 57.2957795 * -rot + 180;
 			    } else {
 				    armLeft.rotation = -45 + leftRot;
 				    armRight.rotation = -45 + rigthRot;
+				var p = armRight.getChildAt(0).localToLocal(25, 27, player);
+				weapon.x = p.x;
+				weapon.y = p.y;
+				weapon.scaleX = -1.2;
+				    weapon.rotation = rigthRot;
 				}
 //				console.log(rot);
+				if(change)
+					this.scaleX = -1;
 			}
 			
 //				this.player.stand();
@@ -278,7 +310,7 @@
 </head>
 <body onLoad="init()">
     <p id="noGamepad" style="visibility:visible;">No gamepad connected, please connect gamepad</p>
-	<canvas id="demoCanvas" width="700" height="300" style="visibility:hidden;">
+	<canvas id="demoCanvas" width="700" height="300" style="visibility:visible;">
 	No canvas support :(
 	</canvas>
 </body>

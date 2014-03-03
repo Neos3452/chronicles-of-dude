@@ -118,8 +118,8 @@
 			armRight.length = forearm.length + sleeve.length;
 			
 			var weapon = new createjs.Bitmap(loadQueue.getResult("weapon"));
-			weapon.regX = 42;
-			weapon.regY = 21;
+			weapon.regX = 10;
+			weapon.regY = 16;
 			
 			this.player.addChild(armLeft);
 			this.player.addChild(weapon);
@@ -180,11 +180,45 @@
 			    } else {
 				    armLeft.rotation = -45 + leftRot;
 				    armRight.rotation = -45 + rigthRot;
-				var p = armRight.getChildAt(0).localToLocal(25, 27, player);
+				var p = armLeft.getChildAt(0).localToLocal(25, 27, player);
 				weapon.x = p.x;
 				weapon.y = p.y;
-				weapon.scaleX = -1.2;
-				    weapon.rotation = rigthRot;
+				weapon.scaleY = 1.4;
+				weapon.scaleX = -1.6;
+					var rotOther = 57.2957795 * Math.atan2(p.y - armRight.y, p.x - armRight.x);
+				    weapon.rotation = rotOther;
+				    
+				    
+				    var holdPointArm = weapon.localToLocal(42, 22, armRight);
+				    var xxxx = armRight.localToGlobal(holdPointArm.x, holdPointArm.y);
+				    test.x = xxxx.x;
+				    test.y = xxxx.y;
+				    xxxx = armRight.localToGlobal(0, 0);
+				    test2.x = xxxx.x;
+				    test2.y = xxxx.y;
+				    /*
+				    var holdPointArm = {
+				    	x: holdPointPlayer.x + armRight.x,
+				    	y: holdPointPlayer.y + armRight.y
+				    }
+				    */
+				    var holdDistance = Utils.vectorLength(holdPointArm.x, holdPointArm.y);
+				    /*
+				    console.log(holdDistance + " " + armRight.length);
+				    var shoulderAngle = Math.acos(holdDistance / (2*sleeve.length)) * 57.2957795;
+				    console.log(shoulderAngle);
+				    
+				    armRight.rotation += shoulderAngle;
+				    */
+				    var elbowRot = 57.2957795 * Math.acos(-((Math.pow(holdDistance, 2) - Math.pow(sleeve.length-5, 2) - Math.pow(forearm.length-17, 2))/(2*(sleeve.length-5)*(forearm.length-17))));
+				    if (isNaN(elbowRot))
+				    	elbowRot = 180;
+					var shoulderRot = 57.2957795 * Math.acos(-((-Math.pow(holdDistance, 2) + Math.pow(sleeve.length-5, 2) - Math.pow(forearm.length-17, 2))/(2*(holdDistance)*(forearm.length-17))));
+				    if (isNaN(shoulderRot))
+				    	shoulderRot = 0;
+				    console.log(elbowRot);
+				    armRight.rotation += shoulderRot;
+				    armRight.getChildAt(0).rotation	= -(180-elbowRot);			    
 				}
 //				console.log(rot);
 				if(change)
@@ -194,6 +228,15 @@
 //				this.player.stand();
 			
 			this.stage.addChild(this.player);
+			
+			
+			var test = new createjs.Shape();
+			test.graphics.beginFill("red").drawRect(0, 0, 2, 2);
+			this.stage.addChild(test);
+			
+			var test2 = new createjs.Shape();
+			test2.graphics.beginFill("orange").drawRect(0, 0, 2, 2);
+			this.stage.addChild(test2);
 			
 			createjs.Ticker.addEventListener("tick", dotick);
 			createjs.Ticker.timingMode = createjs.Ticker.RAF_SYNCHED;

@@ -4,7 +4,7 @@
 <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
 <script src="http://code.createjs.com/preloadjs-0.4.1.min.js"></script>
 <script type="text/javascript" src="utils.js"></script>
-<script type="text/javascript" src="player.js"></script>
+<script type="text/javascript" src="character.js"></script>
 	<script type="text/javascript">
 	
 		var stage;
@@ -14,7 +14,7 @@
 		var ground;
 		var scale = (112 + 56) / 1.8;
 		var gravity = 10;
-		var right = false, left = false, up = false;
+		var right = false, left = false, up = false, mouse = false;
 		var mouseLocation;
 		
 		var loadQueue;
@@ -28,7 +28,8 @@
 		        {id:"head",     src:"head.png"},
 		        {id:"sleeve",   src:"sleeve.png"},
 		        {id:"forearm",  src:"arm.png"},
-		        {id:"weapon",	src:"weapon.png"}
+		        {id:"weapon",	src:"weapon.png"},
+		        {id:"muzzle",	src:"muzzle.png"}
 		    ]);
 		    this.loadQueue.load();
 		}
@@ -117,9 +118,21 @@
 			armRight.y = -100;
 			armRight.length = forearm.length + sleeve.length;
 			
-			var weapon = new createjs.Bitmap(loadQueue.getResult("weapon"));
+			var weaponImage = new createjs.Bitmap(loadQueue.getResult("weapon"));
+			var weaponMuzzle = new createjs.Bitmap(loadQueue.getResult("muzzle"));
+			weaponMuzzle.regX = 10;
+			weaponMuzzle.regY = 21;
+			weaponMuzzle.scaleX = -0.6;
+			weaponMuzzle.scaleY =  0.6;
+			weaponMuzzle.x = 0;
+			weaponMuzzle.y = 15;
+			var weapon = new createjs.Container();
+			weapon.addChild(weaponImage, weaponMuzzle);
 			weapon.regX = 10;
 			weapon.regY = 16;
+			weapon.muzzle = weaponMuzzle;
+			weapon.muzzle.visible = false;
+			this.player.weapon = weapon;
 			
 			this.player.addChild(armLeft);
 			this.player.addChild(weapon);
@@ -216,13 +229,17 @@
 					var shoulderRot = 57.2957795 * Math.acos(-((-Math.pow(holdDistance, 2) + Math.pow(sleeve.length-5, 2) - Math.pow(forearm.length-17, 2))/(2*(holdDistance)*(forearm.length-17))));
 				    if (isNaN(shoulderRot))
 				    	shoulderRot = 0;
-				    console.log(elbowRot);
+				    //console.log(elbowRot);
 				    armRight.rotation += shoulderRot;
 				    armRight.getChildAt(0).rotation	= -(180-elbowRot);			    
 				}
 //				console.log(rot);
 				if(change)
 					this.scaleX = -1;
+			}
+			
+			this.player.shoot = function () {
+				weapon.muzzle.visible = true;
 			}
 			
 //				this.player.stand();
@@ -242,9 +259,14 @@
 			createjs.Ticker.timingMode = createjs.Ticker.RAF_SYNCHED;
 			createjs.Ticker.setFPS(30);
 			this.stage.on("stagemousemove", mouseMoved);
+			this.stage.on("stagemousedown", mouseDown);
+			this.stage.on("stagemouseup", mouseUp);
 		}
 		
 		function dotick(event) {
+//delete following line
+this.player.weapon.muzzle.visible = false;
+				
 		    handleInput();
 			var sec = event.delta/1000;
 			if (player.y < ground) {
@@ -290,7 +312,7 @@
 		}
 		
 		function handleInput() {
-		    var jump = up, speed = 0.0, lookX = mouseLocation.x, lookY = mouseLocation.y;
+		    var jump = up, speed = 0.0, lookX = mouseLocation.x, lookY = mouseLocation.y, shoot = mouse;
 		    if (left) speed += -1.0;
 		    if (right) speed += 1.0;
 		    up = false;
@@ -301,12 +323,16 @@
 		        runAnimation.speed = 0.3 * Math.abs(speed) + 0.10;
 		        lookX = player.x + player.scaleX * 100 + 1000 * speed;
 		        lookY = player.y - player.height + 1000 * lookup;
+		        
+		        mouse = playerGamepad.buttons[1] > 0.5;
 		    }
 		    player.way = speed;
 			player.lookAt(lookX, lookY);
 	        if (jump && !player.midAir) {
 		        player.velocityY = -4.0;
 		    }
+		    if (mouse)
+		    	player.shoot();
 		}
 		
 		function dokeydown(event) {
@@ -332,6 +358,14 @@
 		function mouseMoved(event) {
 		    mouseLocation.x = event.stageX;
 		    mouseLocation.y = event.stageY;
+	    }
+	    
+	    function mouseDown(event) {
+		    mouse = true;
+	    }
+	    
+	    function mouseUp(event) {
+		    mouse = false;
 	    }
 		
 		function onGamepadConnect(event) {

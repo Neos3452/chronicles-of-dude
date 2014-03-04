@@ -20,7 +20,8 @@ if (Object.freeze)
 
 var p = PhysicsEngine.prototype;
 
-p.createPhysicsProperties(object) {
+p.createPhysicsProperties(object)
+{
 	if (object._hasPhysicsProperties)
 		return;
 	if (typeof object.weight === 'undefined')
@@ -89,7 +90,13 @@ p.createPhysicsProperties(object) {
 					object.boundsHeight = 1.0;
 			}
 			object.boundsType = BoundsType.rectangle;
-	}	
+	}
+	object._hasPhysicsProperties = true;	
+}
+
+void applyForce(var object, var direction, var force)
+{
+	
 }
 
 window.PhysicsEngine = PhysicsEngine;

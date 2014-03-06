@@ -3,8 +3,11 @@
 <head>
 <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
 <script src="http://code.createjs.com/preloadjs-0.4.1.min.js"></script>
+<script src="http://code.createjs.com/tweenjs-0.5.1.min.js"></script>
 <script type="text/javascript" src="utils.js"></script>
-<script type="text/javascript" src="character.js"></script>
+<script type="text/javascript" src="player.js"></script>
+<script type="text/javascript" src="weapon.js"></script>
+<script type="text/javascript" src="monster.js"></script>
 	<script type="text/javascript">
 	
 		var stage;
@@ -29,7 +32,8 @@
 		        {id:"sleeve",   src:"sleeve.png"},
 		        {id:"forearm",  src:"arm.png"},
 		        {id:"weapon",	src:"weapon.png"},
-		        {id:"muzzle",	src:"muzzle.png"}
+		        {id:"muzzle",	src:"muzzle.png"},
+		        {id:"monsters",	src:"monsters.gif"}
 		    ]);
 		    this.loadQueue.load();
 		}
@@ -86,16 +90,6 @@
 			playerHead.eyesX = playerHead.regX;
 			playerHead.eyesY = -playerHead.image.height/2;
 			var sprite = new createjs.Sprite(playerTorso, "run");
-			this.player = new Character(sprite, playerHead);
-			this.player.x = 200;
-			this.player.y = 0;
-			this.player.velocityX = 2.5;
-			this.player.velocityY = 0.0;
-			this.player.jumpVelocity = 4.0;
-			this.player.midAir = false;
-			this.player.way = 0;
-			this.player.eyesY = playerHead.eyesY;
-			this.player.height = 112;
 			
 			var forearm = new createjs.Bitmap(loadQueue.getResult("forearm"));
 			forearm.regX = 5;
@@ -120,133 +114,67 @@
 			
 			var weaponImage = new createjs.Bitmap(loadQueue.getResult("weapon"));
 			var weaponMuzzle = new createjs.Bitmap(loadQueue.getResult("muzzle"));
-			weaponMuzzle.regX = 10;
-			weaponMuzzle.regY = 21;
+			
+			var weaponMuzzleSprite = new createjs.SpriteSheet({
+				images: [loadQueue.getResult("muzzle")],
+				frames: {width: 75, height: 40, regX:10, regY:21},
+				animations: {
+					fire: {
+						frames: [0,0,0]
+					}
+				}
+			});
+			var weaponMuzzle = new createjs.Sprite(weaponMuzzleSprite, "fire");
+			weaponMuzzle.visible = false;
 			weaponMuzzle.scaleX = -0.6;
 			weaponMuzzle.scaleY =  0.6;
 			weaponMuzzle.x = 0;
 			weaponMuzzle.y = 15;
-			var weapon = new createjs.Container();
-			weapon.addChild(weaponImage, weaponMuzzle);
+			weaponMuzzle.fire = function() {
+				this.alpha = 1.0;
+				this.visible = true;
+				this.gotoAndStop("fire");
+				createjs.Tween.get(this, {useTicks:true}).to({alpha:0, visible:false}, 2, createjs.Ease.quintIn());
+			}
+			var weapon = new Weapon({
+				weapon: weaponImage,
+				muzzle: weaponMuzzle,
+				coolDown: 100,
+				reloadTime: 1500,
+				maxMagSize: 20,
+				ammo: 40
+			});
+			//weapon.addChild(weaponImage, weaponMuzzle);
 			weapon.regX = 10;
 			weapon.regY = 16;
-			weapon.muzzle = weaponMuzzle;
-			weapon.muzzle.visible = false;
-			this.player.weapon = weapon;
+			weapon.scaleY = 1.4;
+			weapon.scaleX = -1.6;
+			//weapon.muzzle = weaponMuzzle;
+			//weapon.muzzle.visible = false;
+			//this.player.weapon = weapon;
 			
-			this.player.addChild(armLeft);
-			this.player.addChild(weapon);
-			this.player.addChild(armRight);
-			this.player.swapChildren(armLeft, playerHead);
-			
-			this.player.reg_lookAt = this.player.lookAt;
-			this.player.lookAt = function (x, y) {
-				this.scaleX = 1;
-				var change = false;
-				if (x < this.x) {
-					var dx = this.x - x;
-					x += 2*dx;
-					change = true;
-				}
-				this.reg_lookAt(x,y);
-				this.scaleX = 1;
-				var F1 = {
-					x: this.x + armLeft.x,
-					y: this.y + armLeft.y,
-				};
-				var F2 = {
-					x: this.x + armRight.x,
-					y: this.y + armRight.y,
-				};
-				
-				var a = Math.abs(F1.x - F2.x);
-				var b = 2 * Math.sqrt(Math.pow(armLeft.length, 2) - Math.pow(a/2,2));
-				a = a + 2 * (armLeft.length - a);
-				var elipseCenter = {
-					x: 0,
-					y: 0
-				}
-				elipseCenter.x = F1.x - (F1.x - F2.x)/2;
-				elipseCenter.y = F1.y - (F1.y - F2.y)/2;
-				var direction = {
-					x: x - elipseCenter.x,
-					y: y - elipseCenter.y
-				};
-				var l = Utils.vectorLength(direction.x, direction.y);
-				direction.x /= l;
-				direction.y /= l;
-	            var rot = Math.atan2(direction.y, direction.x);
-				var elipseX = a/2 * Math.cos(rot);
-				var elipseY = b/2 * Math.sin(rot);
-				var leftRot = 57.2957795 * Math.atan2(elipseCenter.y + elipseY - F1.y, elipseCenter.x + elipseX - F1.x);
-				var rigthRot = 57.2957795 * Math.atan2(elipseCenter.y + elipseY - F2.y, elipseCenter.x + elipseX - F2.x);
-				if (this.scaleX < 0) {
-				/*
-			        leftRot -= 180;
-			        leftRot *= -1;
-			        rigthRot -= 180;
-			        rigthRot *= -1;
-			        */
-			        armRight.rotation = -45 + leftRot;
-				    armLeft.rotation = -45 + rigthRot;
-					weapon.rotation = 57.2957795 * -rot + 180;
-			    } else {
-				    armLeft.rotation = -45 + leftRot;
-				    armRight.rotation = -45 + rigthRot;
-				var p = armLeft.getChildAt(0).localToLocal(25, 27, player);
-				weapon.x = p.x;
-				weapon.y = p.y;
-				weapon.scaleY = 1.4;
-				weapon.scaleX = -1.6;
-					var rotOther = 57.2957795 * Math.atan2(p.y - armRight.y, p.x - armRight.x);
-				    weapon.rotation = rotOther;
-				    
-				    
-				    var holdPointArm = weapon.localToLocal(42, 22, armRight);
-				    var xxxx = armRight.localToGlobal(holdPointArm.x, holdPointArm.y);
-				    test.x = xxxx.x;
-				    test.y = xxxx.y;
-				    xxxx = armRight.localToGlobal(0, 0);
-				    test2.x = xxxx.x;
-				    test2.y = xxxx.y;
-				    /*
-				    var holdPointArm = {
-				    	x: holdPointPlayer.x + armRight.x,
-				    	y: holdPointPlayer.y + armRight.y
-				    }
-				    */
-				    var holdDistance = Utils.vectorLength(holdPointArm.x, holdPointArm.y);
-				    /*
-				    console.log(holdDistance + " " + armRight.length);
-				    var shoulderAngle = Math.acos(holdDistance / (2*sleeve.length)) * 57.2957795;
-				    console.log(shoulderAngle);
-				    
-				    armRight.rotation += shoulderAngle;
-				    */
-				    var elbowRot = 57.2957795 * Math.acos(-((Math.pow(holdDistance, 2) - Math.pow(sleeve.length-5, 2) - Math.pow(forearm.length-17, 2))/(2*(sleeve.length-5)*(forearm.length-17))));
-				    if (isNaN(elbowRot))
-				    	elbowRot = 180;
-					var shoulderRot = 57.2957795 * Math.acos(-((-Math.pow(holdDistance, 2) + Math.pow(sleeve.length-5, 2) - Math.pow(forearm.length-17, 2))/(2*(holdDistance)*(forearm.length-17))));
-				    if (isNaN(shoulderRot))
-				    	shoulderRot = 0;
-				    //console.log(elbowRot);
-				    armRight.rotation += shoulderRot;
-				    armRight.getChildAt(0).rotation	= -(180-elbowRot);			    
-				}
-//				console.log(rot);
-				if(change)
-					this.scaleX = -1;
-			}
-			
-			this.player.shoot = function () {
-				weapon.muzzle.visible = true;
-			}
+			this.player = new Player({
+				torso: sprite,
+				head: playerHead,
+				weapon: weapon,
+				armLeft: armLeft,
+				armRight: armRight
+			});
+			this.player.x = 200;
+			this.player.y = 0;
+			this.player.velocityX = 2.5;
+			this.player.velocityY = 0.0;
+			this.player.jumpVelocity = 4.0;
+			this.player.midAir = false;
+			this.player.way = 0;
+			this.player.eyesY = playerHead.eyesY;
+			this.player.height = 112;
 			
 //				this.player.stand();
 			
 			this.stage.addChild(this.player);
 			
-			
+			/*
 			var test = new createjs.Shape();
 			test.graphics.beginFill("red").drawRect(0, 0, 2, 2);
 			this.stage.addChild(test);
@@ -254,6 +182,7 @@
 			var test2 = new createjs.Shape();
 			test2.graphics.beginFill("orange").drawRect(0, 0, 2, 2);
 			this.stage.addChild(test2);
+			*/
 			
 			createjs.Ticker.addEventListener("tick", dotick);
 			createjs.Ticker.timingMode = createjs.Ticker.RAF_SYNCHED;
@@ -264,8 +193,6 @@
 		}
 		
 		function dotick(event) {
-//delete following line
-this.player.weapon.muzzle.visible = false;
 				
 		    handleInput();
 			var sec = event.delta/1000;
@@ -332,7 +259,7 @@ this.player.weapon.muzzle.visible = false;
 		        player.velocityY = -4.0;
 		    }
 		    if (mouse)
-		    	player.shoot();
+		    	player.shoot(createjs.Ticker.getTime());
 		}
 		
 		function dokeydown(event) {

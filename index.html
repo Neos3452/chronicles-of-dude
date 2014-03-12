@@ -296,7 +296,7 @@
 	    }
 		
 		function onGamepadConnect(event) {
-		    if (event.index === 0) {
+		    if (event.gamepad.index === 0) {
 		        playerGamepad = event.gamepad;
 		        gamepadText.style.visibility = "hidden";
 		        canvas.style.visibility = "visible";
@@ -304,7 +304,7 @@
 		}
 		
 		function onGamepadDisconnect(event) {
-		    if (event.index === 0) {
+		    if (event.gamepad.index === 0) {
 		        playerGamepad = undefined;
 		        gamepadText.style.visibility = "visible";
 		        canvas.style.visibility = "hidden";

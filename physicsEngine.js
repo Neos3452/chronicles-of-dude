@@ -94,7 +94,22 @@ p.createPhysicsProperties(object)
 	object._hasPhysicsProperties = true;	
 }
 
-void applyForce(var object, var direction, var force)
+void applyForce(timeDelta, object, direction, force)
+{
+	
+}
+
+void applyGravity(timeDelta, object)
+{
+
+}
+
+void calcVelocity(timeDelta, object)
+{
+
+}
+
+void calcPosition(timeDelta, object)
 {
 	
 }

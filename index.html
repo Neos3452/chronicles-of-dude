@@ -8,6 +8,7 @@
 <script type="text/javascript" src="player.js"></script>
 <script type="text/javascript" src="weapon.js"></script>
 <script type="text/javascript" src="monster.js"></script>
+<script type="text/javascript" src="background.js"></script>
 	<script type="text/javascript">
 	
 		var stage;
@@ -27,13 +28,15 @@
 		    this.loadQueue = new createjs.LoadQueue(false);
 		    this.loadQueue.on("complete", loadingComplete, this);
 		    this.loadQueue.loadManifest([
-		        {id:"torso",    src:"torso_sprite_6.png"},
-		        {id:"head",     src:"head.png"},
-		        {id:"sleeve",   src:"sleeve.png"},
-		        {id:"forearm",  src:"arm.png"},
-		        {id:"weapon",	src:"weapon.png"},
-		        {id:"muzzle",	src:"muzzle.png"},
-		        {id:"monsters",	src:"monsters.gif"}
+		        {id:"torso",    	src:"torso_sprite_6.png"},
+		        {id:"head",     	src:"head.png"},
+		        {id:"sleeve",   	src:"sleeve.png"},
+		        {id:"forearm",  	src:"arm.png"},
+		        {id:"weapon",		src:"weapon.png"},
+		        {id:"muzzle",		src:"muzzle.png"},
+		        {id:"monsters",		src:"monsters.gif"},
+		        {id:"background",	src:"cavestagebackground.png"},
+		        {id:"ground",		src:"groundTile.png"},
 		    ]);
 		    this.loadQueue.load();
 		}
@@ -56,11 +59,24 @@
 			
 			this.stage = new createjs.Stage("demoCanvas");
 			
+			var bgImage = new createjs.Bitmap(loadQueue.getResult("background"));
+			bgImage.y = -400;
+			bgImage.scaleX = 2.0;
+			bgImage.scaleY = 2.0;
+			var groundTile = new createjs.Bitmap(loadQueue.getResult("ground"));
+			this.background = new Background({
+				bgImage:		bgImage,
+				floorTile:		groundTile,
+				groundLevel: 	this.canvas.height - 20,
+				sceneWidth:		this.canvas.width,
+				bgSpeed:		0.3,
+			});
+			this.stage.addChild(this.background);
+			
 			ground = this.canvas.height - 20;
 			var groundRect = new createjs.Shape();
 			groundRect.graphics.beginFill("brown").drawRect(0, ground, this.canvas.width, 20);
-			this.stage.addChild(groundRect);
-			
+			//this.stage.addChild(groundRect);
 			
 			var playerTorso = new createjs.SpriteSheet({
 				images: [loadQueue.getResult("torso")],
@@ -78,7 +94,8 @@
 					 },
 					step: 1,
 					stand: 0,
-					jump: 3
+					jump: 3,
+					hit: 1,
 				}
 			});
 			this.runAnimation = playerTorso.getAnimation("run");
@@ -119,9 +136,7 @@
 				images: [loadQueue.getResult("muzzle")],
 				frames: {width: 75, height: 40, regX:10, regY:21},
 				animations: {
-					fire: {
-						frames: [0,0,0]
-					}
+					fire: 0
 				}
 			});
 			var weaponMuzzle = new createjs.Sprite(weaponMuzzleSprite, "fire");
@@ -134,7 +149,7 @@
 				this.alpha = 1.0;
 				this.visible = true;
 				this.gotoAndStop("fire");
-				createjs.Tween.get(this, {useTicks:true}).to({alpha:0, visible:false}, 2, createjs.Ease.quintIn());
+				createjs.Tween.get(this, {useTicks:true}).to({alpha:0, visible:false}, 2, createjs.Ease.circIn());
 			}
 			var weapon = new Weapon({
 				weapon: weaponImage,
@@ -174,6 +189,13 @@
 			
 			this.stage.addChild(this.player);
 			
+			/*
+			var monsterSheet = new SpriteSheet({
+			
+			});
+			var monsterSprite = new Sprite(monsterSprite, "stand");
+			this.enemy = new Monster();
+			*/
 			/*
 			var test = new createjs.Shape();
 			test.graphics.beginFill("red").drawRect(0, 0, 2, 2);
@@ -219,11 +241,12 @@
 			if(left)
 				player.way -= 1;
 			*/
-			player.x += scale * player.velocityX * player.way * sec;
-			if (player.x > canvas.width)
-				player.x = 0;
-			else if (player.x < 0)
-				player.x = canvas.width;
+			dx = scale * player.velocityX * player.way * sec;
+			//player.x += scale * player.velocityX * player.way * sec;
+			if (player.x > canvas.width / 2 && dx > 0.0)
+				this.background.move(-dx);
+			else if (player.x > 70 || dx > 0.0)
+				player.x += dx;
 			
 			if (!player.midAir) {
 				if (!player.isRunning()) {
@@ -314,7 +337,7 @@
 </head>
 <body onLoad="init()">
     <p id="noGamepad" style="visibility:visible;">No gamepad connected, please connect gamepad</p>
-	<canvas id="demoCanvas" width="700" height="300" style="visibility:visible;">
+	<canvas id="demoCanvas" width="900" height="400" style="visibility:visible;">
 	No canvas support :(
 	</canvas>
 </body>

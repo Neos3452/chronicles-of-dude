@@ -65,6 +65,14 @@
 		return this.torso.currentAnimation === "jump";
 	}
 	
+	p.hit = function() {
+		this.torso.gotoAndPlay("hit");
+	}
+	
+	p.isBeingHit = function() {
+		return this.torso.currentAnimation === "hit";
+	}
+	
 	p.lookAt = function(x, y) {
 		if (x < this.x) {
 			x += 2*(this.x - x);

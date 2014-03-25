@@ -99,16 +99,20 @@
 		}
 	}
 	
-	p.checkColision = function(A, B, C) {
+	p.checkColision = function(A, B, C, way) {
 	/*
 		console.log(Math.abs(A * (this.x + this.regX) + B * (this.y + this.regY) + C) 
 							/ Math.sqrt(A*A + B*B));
 							*/
-		return this.hitBoxDiameter > 
-			(
-			Math.abs(A * (this.x) + B * (this.y) + C) 
-							/ Math.sqrt(A*A + B*B)
-			);
+		if (this.hitBoxDiameter > Utils.distanceFromLine(this.x, this.y, A, B, C)) {
+			var l = Utils.perpendicularLine(A, B, C);
+			console.log(l.A + " " + l.B + " " + l.C);
+			var val = Utils.calcYfromLine(l.A, l.B, l.C, this.x);
+			console.log(val + " " + this.y);
+			return this.y > val;
+		}
+		return false;
+		
 	}
 	
 	window.Monster = Monster;

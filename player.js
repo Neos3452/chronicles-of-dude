@@ -143,6 +143,10 @@
 			x: realX,
 			y: y,
 		};
+		
+		this._lineParam = Utils.calcLineParameters(globPoint.x, globPoint.y, realX, y);
+		
+		/*
 		var tempA = globPoint.y - y;
 		var tempB = globPoint.x - realX;
 		this._lineParam = {
@@ -150,11 +154,12 @@
 			B: tempB,
 			C: (-y * tempB) + (-realX * tempA),
 		};
+		*/
 	}
 	
 	p.shoot = function (currentTime) {
 		this.weapon.shoot(currentTime);
-		this.world.playerShoot(this._lineParam.A, this._lineParam.B, this._lineParam.C);
+		this.world.playerShoot(this._lineParam.A, this._lineParam.B, this._lineParam.C, this.scaleX>0?1:-1);
 	}
 	
 	window.Player = Player;

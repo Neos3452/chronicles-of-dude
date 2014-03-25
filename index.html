@@ -336,7 +336,8 @@
 				this.test.y = this.begPo.y;
 				this.test2.x = this.begEnd.x;
 				this.test2.y = this.begEnd.y;
-			*/
+				*/
+			
 			this.stage.update();
 		}
 		
@@ -364,8 +365,18 @@
 		    	player.shoot(createjs.Ticker.getTime());
 		}
 		
-		function playerShoot(A, B, C) {
-			if (enemy.checkColision(A, B, C))
+		function playerShoot(A, B, C, way) {
+		/*
+			var t = new createjs.Shape();
+			t.graphics.beginFill("red").drawRect(0, 0, 2, 2);
+			t.y = 70;
+			t.x = (B*t.y + C) / -A;
+			this.stage.addChild(t);
+		*/	
+			
+			//console.log(t.x +"," + t.y);
+			
+			if (enemy.checkColision(A, B, C, way))
 				enemy.dead();
 		}
 		

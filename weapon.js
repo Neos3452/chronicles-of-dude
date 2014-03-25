@@ -36,7 +36,9 @@
 			} else {
 				this._nextTimeShot = currentTime + this.coolDownTime;
 			}
+			return true;
 		}
+		return false;
 	}
 	
 	p.reload = function() {

@@ -16,6 +16,20 @@
 		this.hitBoxDiameter = monsterAssets.hitBoxDiameter;
 		this.addChild(this.sprite);
 	}
+	
+	//p.Container_clone = p.clone;
+	
+	p.naive_clone = function() {
+		return new Monster({
+			sprite: this.sprite.clone(),
+			approachDist: this.approachDist,
+			keepDist: this.keepDist,
+			travelSpeed: this.travelSpeed,
+			health: this.health,
+			world: this.world,
+			hitBoxDiameter: this.hitBoxDiameter,
+		});
+	}
  
  	p.run = function() {
 		this.sprite.gotoAndPlay("run");

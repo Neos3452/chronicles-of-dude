@@ -160,8 +160,8 @@
 	}
 	
 	p.shoot = function (currentTime) {
-		this.weapon.shoot(currentTime);
-		this.world.playerShoot(this._lineParam.A, this._lineParam.B, this._lineParam.C, this._globPoint, this.scaleX>0?1:-1);
+		if (this.weapon.shoot(currentTime))
+			this.world.playerShoot(this._lineParam.A, this._lineParam.B, this._lineParam.C, this._globPoint, this.scaleX>0?1:-1);
 	}
 	
 	window.Player = Player;

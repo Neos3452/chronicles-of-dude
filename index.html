@@ -252,7 +252,10 @@
 			this.test = new createjs.Shape();
 			this.test.graphics.beginFill("red").drawRect(0, 0, 2, 2);
 			this.stage.addChild(this.test);
-			
+			this.begPo = {
+			    x:0,
+			    y:0,
+			};
 			
 			this.test2 = new createjs.Shape();
 			this.test2.graphics.beginFill("orange").drawRect(0, 0, 2, 2);
@@ -331,6 +334,7 @@
 					player.stand();
 				}
 			} 
+			
 			/*
 				this.test.x = this.begPo.x;
 				this.test.y = this.begPo.y;
@@ -365,7 +369,7 @@
 		    	player.shoot(createjs.Ticker.getTime());
 		}
 		
-		function playerShoot(A, B, C, way) {
+		function playerShoot(A, B, C, shootPoint, way) {
 		/*
 			var t = new createjs.Shape();
 			t.graphics.beginFill("red").drawRect(0, 0, 2, 2);
@@ -376,7 +380,7 @@
 			
 			//console.log(t.x +"," + t.y);
 			
-			if (enemy.checkColision(A, B, C, way))
+			if (enemy.checkColision(A, B, C, shootPoint, way))
 				enemy.dead();
 		}
 		

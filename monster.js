@@ -99,17 +99,23 @@
 		}
 	}
 	
-	p.checkColision = function(A, B, C, way) {
+	p.checkColision = function(A, B, C, shootPoint, way) {
 	/*
 		console.log(Math.abs(A * (this.x + this.regX) + B * (this.y + this.regY) + C) 
 							/ Math.sqrt(A*A + B*B));
 							*/
 		if (this.hitBoxDiameter > Utils.distanceFromLine(this.x, this.y, A, B, C)) {
-			var l = Utils.perpendicularLine(A, B, C);
-			console.log(l.A + " " + l.B + " " + l.C);
-			var val = Utils.calcYfromLine(l.A, l.B, l.C, this.x);
-			console.log(val + " " + this.y);
-			return this.y > val;
+		    //console.log(this.x + "," +this.y);
+			var l = Utils.perpendicularLine(A, B, C, this.x, this.y);
+			//console.log(A/-B + " " + C/-B);
+			//console.log(l.A + " " + l.B + " " + l.C);
+			//var val = Utils.calcYfromLine(l.A, l.B, l.C, this.x);
+			//console.log(val + " " + shootPoint.y + " " +way);
+			//console.log(way ? shootPoint.y < val : shootPoint.y > val);
+			var point = Utils.linesIntersection(A, B, C, l.A, l.B, l.C);
+			//this.world.begPo = point;
+			//console.log(point.x + "," + point.y + " | " + shootPoint.x);
+			return way == 1 ? point.x > shootPoint.x : point.x < shootPoint.x;
 		}
 		return false;
 		

@@ -29,16 +29,23 @@ Function.prototype.method = function (name, func) {
 		};
 	}
 	
-	_utils.prototype.perpendicularLine = function (A, B, C) {
+	_utils.prototype.perpendicularLine = function (A, B, C, x, y) {
 		return {
 			A: B/A,
 			B: -1,
-			C: C/-B,
+			C: y - x * B/A,
 		};
 	}
 	
 	_utils.prototype.calcYfromLine = function (A, B, C, x) {
 		return (A/-B) * x + C/-B;
+	}
+	
+	_utils.prototype.linesIntersection = function (A1, B1, C1, A2, B2, C2) {
+	    return {
+	        x: (( B1*C2 - C1*B2)/(A1*B2 - B1*A2)),
+	        y: ((-C1*A2 + A1*C2)/(-A1*B2 + B1*A2)),
+	    };
 	}
 	
 	_utils.prototype.distanceFromLine = function (x, y, A, B, C) {

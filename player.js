@@ -134,17 +134,19 @@
 		this.armLeft.all.rotation = shoulderRotReg-45 + shoulderRot;
 		this.armLeft.forearm.rotation	= -(180-elbowRot);
 		
-		var globPoint = this.localToGlobal(this.armRight.all.x, this.armRight.all.y);
+	    this._globPoint = this.localToGlobal(this.armRight.all.x, this.armRight.all.y);
+	    /*
 		this.world.begPo = {
-			x: globPoint.x,
-			y: globPoint.y,
+			x: this._globPoint.x,
+			y: this._globPoint.y,
 		};
+		*/
 		this.world.begEnd = {
 			x: realX,
 			y: y,
 		};
 		
-		this._lineParam = Utils.calcLineParameters(globPoint.x, globPoint.y, realX, y);
+		this._lineParam = Utils.calcLineParameters(this._globPoint.x, this._globPoint.y, realX, y);
 		
 		/*
 		var tempA = globPoint.y - y;
@@ -159,7 +161,7 @@
 	
 	p.shoot = function (currentTime) {
 		this.weapon.shoot(currentTime);
-		this.world.playerShoot(this._lineParam.A, this._lineParam.B, this._lineParam.C, this.scaleX>0?1:-1);
+		this.world.playerShoot(this._lineParam.A, this._lineParam.B, this._lineParam.C, this._globPoint, this.scaleX>0?1:-1);
 	}
 	
 	window.Player = Player;

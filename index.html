@@ -9,6 +9,7 @@
 <script type="text/javascript" src="weapon.js"></script>
 <script type="text/javascript" src="monster.js"></script>
 <script type="text/javascript" src="background.js"></script>
+<script type="text/javascript" src="hud.js"></script>
 	<script type="text/javascript">
 	
 		var stage;
@@ -77,8 +78,8 @@
 			this.stage.addChild(this.background);
 			
 			ground = this.canvas.height - 20;
-			var groundRect = new createjs.Shape();
-			groundRect.graphics.beginFill("brown").drawRect(0, ground, this.canvas.width, 20);
+			//var groundRect = new createjs.Shape();
+			//groundRect.graphics.beginFill("brown").drawRect(0, ground, this.canvas.width, 20);
 			//this.stage.addChild(groundRect);
 			
 			var playerTorso = new createjs.SpriteSheet({
@@ -159,8 +160,8 @@
 				muzzle: weaponMuzzle,
 				coolDown: 100,
 				reloadTime: 1500,
-				maxMagSize: 200,
-				ammo: 400
+				maxMagSize: 30,
+				ammo: 150
 			});
 			//weapon.addChild(weaponImage, weaponMuzzle);
 			weapon.regX = 38;
@@ -251,6 +252,14 @@
 			
 			this.stage.addChild(this.enemy);
 			this.enemies.push(this.enemy);
+			
+			this.hud = new Hud({
+			    headImage: playerHead.clone(),
+			})
+			this.hud.x = 50;
+			this.hud.y = this.canvas.height - 50;
+			this.stage.addChild(this.hud);
+			this.hud.setAmmo(this.player.weapon.currentMagazineCount, this.player.weapon.ammo);
 			
 			/*
 			this.test = new createjs.Shape();
@@ -471,6 +480,8 @@
 					this.enemyCounter++;
 				}
 			}
+			this.hud.setAmmo(this.player.weapon.currentMagazineCount, this.player.weapon.ammo);
+			this.hud.setScore(this.enemyCounter);
 		}
 		
 		function dokeydown(event) {

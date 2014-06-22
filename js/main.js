@@ -229,7 +229,7 @@ function loadingComplete() {
     this.source_bat = new Monster({
         sprite:			monsterSprite,
         approachDist:	40,
-        keepDist:		15,
+        keepDist:		0,
         travelSpeed:	1.3,
         health:			2,
         hitBoxDiameter:	12,
@@ -282,7 +282,15 @@ function createNewEnemy() {
 }
 
 function getPlayerPosition() {
-    return { x: player.x, y: player.y };
+    return { 
+        stand: {x: player.x, y: player.y },
+        torso: null,
+        head: {
+            x: this.player.x + this.player.head.x + this.player.head.eyesX,
+            y: this.player.y + this.player.head.y + this.player.head.eyesY
+        },
+        weapon: null,
+    };
 }
 
 function dotick(event) {
@@ -376,6 +384,7 @@ function dotick(event) {
             curEnemy.calcAI();
             if (curEnemy.velocityX != 0) {
                 curEnemy.x += scale * curEnemy.velocityX * sec;
+                curEnemy.y += scale * curEnemy.velocityY * sec;
             }
             aliveCnt++;
         }

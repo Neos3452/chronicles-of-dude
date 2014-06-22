@@ -88,18 +88,19 @@
 	}
 	
 	p.calcAI = function() {
-		var playerPos = this.world.getPlayerPosition();
+		var playerPos = this.world.getPlayerPosition().head;
 		//console.log(this.x +","+ this.y);
 		this.lookAt(playerPos.x, playerPos.y);
-		var distance = Utils.vectorLength(this.x - playerPos.x, 0);
-		var direction = this.x > playerPos.x ? -1 : 1;
+        var vector = Utils.normalize(playerPos.x - this.x, playerPos.y - this.y);
+		var distance = Utils.vectorLength(playerPos.x - this.x, playerPos.y - this.y);
+		//var direction = this.x > playerPos.x ? -1 : 1;
 		//this.run();
-		if (distance < this.keepDist) {
-			this.velocityX = -1 * direction * this.travelSpeed;
-		} else if (distance > this.approachDist) {
-			this.velocityX = direction * this.travelSpeed;
+		if (distance > this.approachDist) {
+			this.velocityX = vector.x * this.travelSpeed;
+			this.velocityY = vector.y * this.travelSpeed;
 		} else {
-			this.velocityX = 0;
+			this.velocityX = (Math.random() * 2 - 1) * this.travelSpeed;
+			this.velocityY = (Math.random() * 2 - 1) * this.travelSpeed;
 		}
 		//console.log(distance+"("+this.keepDist+","+this.approachDist+")" + " " +this.velocityX);
 	}

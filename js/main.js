@@ -14,6 +14,9 @@ var respawnInterval = 2500;
 var loadQueue;
 var playerGamepad = undefined;
 
+var gameRunning = true;
+var gamepadPopupShown = false;
+
 function init() {
     this.loadQueue = new createjs.LoadQueue(false);
     this.loadQueue.on("complete", loadingComplete, this);
@@ -223,7 +226,7 @@ function loadingComplete() {
     monsterSprite.scaleY = 2;
     monsterSprite.regX = 8;
     monsterSprite.regY = 7.5;
-    this.enemy = new Monster({
+    this.source_bat = new Monster({
         sprite:			monsterSprite,
         approachDist:	40,
         keepDist:		15,
@@ -232,13 +235,6 @@ function loadingComplete() {
         hitBoxDiameter:	12,
         world:			this,
     });
-    this.enemy.x = 0;
-    this.enemy.y = 70;
-    this.enemy.velocityX = 0;
-    this.enemy.velocityY = 0;
-
-    this.stage.addChild(this.enemy);
-    this.enemies.push(this.enemy);
 
     this.hud = new Hud({
         headImage: playerHead.clone(),
@@ -272,10 +268,11 @@ function loadingComplete() {
     this.stage.on("stagemouseup", mouseUp);
     pause();
     showGamepadMissing();
+    this.stage.update();
 }
 
 function createNewEnemy() {
-    var newEnemy = this.enemy.naive_clone();
+    var newEnemy = this.source_bat.naive_clone();
     newEnemy.x = 0;
     newEnemy.y = 0;
     newEnemy.velocityX = 0;
@@ -289,142 +286,161 @@ function getPlayerPosition() {
 }
 
 function dotick(event) {
+    if (!this.gameRunning)
+        return;
     if (!createjs.Ticker.getPaused()) {
-    handleInput();
-    var sec = event.delta/1000;
-    if (player.y < ground) {
-        player.velocityY += gravity * sec;
-        player.midAir = true;
-    } else {
-        player.midAir = false;
-    }
-
-    if (player.velocityY > 0.00001 || player.velocityY < -0.00001) {
-        player.y += scale * player.velocityY * sec;
-        if (player.y > ground) {
-            player.y = ground;
-            player.velocityY = 0;
+        handleInput();
+        var sec = event.delta/1000;
+        if (player.y < ground) {
+            player.velocityY += gravity * sec;
+            player.midAir = true;
+        } else {
+            player.midAir = false;
         }
-        if (!player.isJumping())
-            player.jump();
-    }
-    /*
-    player.way = 0;
-    if(right)
-        player.way += 1;
-    if(left)
-        player.way -= 1;
-    */
-    dx = scale * player.velocityX * player.way * sec;
-    //player.x += scale * player.velocityX * player.way * sec;
-    if (player.x > 7 * canvas.width / 8 && dx > 0.0) {
-        this.background.move(-dx);
-        for (var i = 0; i < enemies.length; ++i)
-            enemies[i].x -= dx;
-    } else if (player.x > 70 || dx > 0.0)
-        player.x += dx;
 
-    if (!player.midAir) {
-        if (!player.isRunning()) {
-            if (player.way != 0)
-                player.run();
+        if (player.velocityY > 0.00001 || player.velocityY < -0.00001) {
+            player.y += scale * player.velocityY * sec;
+            if (player.y > ground) {
+                player.y = ground;
+                player.velocityY = 0;
+            }
+            if (!player.isJumping())
+                player.jump();
         }
-        if (player.way == 0 && !player.isStanding()) {
-            player.stand();
-        }
-    } 
+        /*
+        player.way = 0;
+        if(right)
+            player.way += 1;
+        if(left)
+            player.way -= 1;
+        */
+        dx = scale * player.velocityX * player.way * sec;
+        //player.x += scale * player.velocityX * player.way * sec;
+        if (player.x > 7 * canvas.width / 8 && dx > 0.0) {
+            this.background.move(-dx);
+            for (var i = 0; i < enemies.length; ++i)
+                enemies[i].x -= dx;
+        } else if (player.x > 70 || dx > 0.0)
+            player.x += dx;
 
-    var respawn = false;
-    if (createjs.Ticker.getTime(true) - this.lastInterval > respawnInterval) {
-        respawn = true;
-        this.lastInterval = createjs.Ticker.getTime(true);
-    }
-    if (createjs.Ticker.getTime(true) - this.lastTime > 5000 && respawnInterval > 300) {
-        respawnInterval -= 100;
-        this.lastTime = createjs.Ticker.getTime(true);
-        console.log("speed up");
-    }
-    var aliveCnt = 0;
-    for (var i = 0; i < enemies.length; ++i) {
-        var curEnemy = enemies[i];
-        //console.log(curEnemy);
-        if (!curEnemy.parent) {
-            //console.log("no parent " + i);
-            if (respawn) {
-                //console.log("respawn");
-                this.stage.addChild(curEnemy);
-                if (Math.random() < 0.5)
-                    curEnemy.x = -10;
-                else
-                    curEnemy.x = this.canvas.width + 10;
-                curEnemy.y = Math.random() * this.canvas.height/2 + 25;
-                curEnemy.velocityX = 0;
-                curEnemy.velocityY = 0;
-                curEnemy.stand();
-                respawn = false;
-            } else {
+        if (!player.midAir) {
+            if (!player.isRunning()) {
+                if (player.way != 0)
+                    player.run();
+            }
+            if (player.way == 0 && !player.isStanding()) {
+                player.stand();
+            }
+        }
+
+        var respawn = false;
+        if (createjs.Ticker.getTime(true) - this.lastInterval > respawnInterval) {
+            respawn = true;
+            this.lastInterval = createjs.Ticker.getTime(true);
+        }
+        if (createjs.Ticker.getTime(true) - this.lastTime > 5000 && respawnInterval > 300) {
+            respawnInterval -= 100;
+            this.lastTime = createjs.Ticker.getTime(true);
+            console.log("speed up");
+        }
+        var aliveCnt = 0;
+        for (var i = 0; i < enemies.length; ++i) {
+            var curEnemy = enemies[i];
+            //console.log(curEnemy);
+            if (!curEnemy.parent) {
+                //console.log("no parent " + i);
+                if (respawn) {
+                    //console.log("respawn");
+                    this.stage.addChild(curEnemy);
+                    if (Math.random() < 0.5)
+                        curEnemy.x = -10;
+                    else
+                        curEnemy.x = this.canvas.width + 10;
+                    curEnemy.y = Math.random() * this.canvas.height/2 + 25;
+                    curEnemy.velocityX = 0;
+                    curEnemy.velocityY = 0;
+                    curEnemy.stand();
+                    respawn = false;
+                } else {
+                    continue;
+                }
+            }
+            if (curEnemy.isDead()) {
+                curEnemy.velocityY += gravity * sec;
+                curEnemy.y += scale * curEnemy.velocityY * sec;
+                if (curEnemy.y > this.canvas.height) {
+                    this.stage.removeChild(curEnemy);
+                }
                 continue;
             }
-        }
-        if (curEnemy.isDead()) {
-            curEnemy.velocityY += gravity * sec;
-            curEnemy.y += scale * curEnemy.velocityY * sec;
-            if (curEnemy.y > this.canvas.height) {
-                this.stage.removeChild(curEnemy);
+            curEnemy.calcAI();
+            if (curEnemy.velocityX != 0) {
+                curEnemy.x += scale * curEnemy.velocityX * sec;
             }
-            continue;
+            aliveCnt++;
         }
-        curEnemy.calcAI();
-        if (curEnemy.velocityX != 0) {
-            curEnemy.x += scale * curEnemy.velocityX * sec;
+        if (respawn) {
+            console.log("spawn");
+            var newEnemy = this.createNewEnemy();
+            enemies.push(newEnemy);
+            if (Math.random() < 0.5)
+                newEnemy.x = -10;
+            else
+                newEnemy.x = this.canvas.width + 10;
+            newEnemy.y = Math.random() * this.canvas.height/2 + 25;
+            this.stage.addChild(newEnemy);
+            aliveCnt++;
+            respawn = false;
         }
-        aliveCnt++;
-    }
-    if (respawn) {
-        console.log("spawn");
-        var newEnemy = this.createNewEnemy();
-        enemies.push(newEnemy);
-        if (Math.random() < 0.5)
-            newEnemy.x = -10;
-        else
-            newEnemy.x = this.canvas.width + 10;
-        newEnemy.y = Math.random() * this.canvas.height/2 + 25;
-        this.stage.addChild(newEnemy);
-        aliveCnt++;
-        respawn = false;
-    }
-    if (aliveCnt > 15)
-        this.gameLost();
-    /*
-    if (!enemy.removed) {
-        if (enemy.isDead()) {
-            enemy.velocityY += gravity * sec;
-            enemy.y += scale * enemy.velocityY * sec;
-            if (enemy.y > this.canvas.height) {
-                this.stage.removeChild(enemy);
-                enemy.removed = true;
-            }
-        } else {
-            enemy.calcAI();
-            if (enemy.velocityX != 0) {
-                enemy.x += scale * enemy.velocityX * sec;
+        if (aliveCnt > 15)
+            this.gameLost();
+        /*
+        if (!enemy.removed) {
+            if (enemy.isDead()) {
+                enemy.velocityY += gravity * sec;
+                enemy.y += scale * enemy.velocityY * sec;
+                if (enemy.y > this.canvas.height) {
+                    this.stage.removeChild(enemy);
+                    enemy.removed = true;
+                }
+            } else {
+                enemy.calcAI();
+                if (enemy.velocityX != 0) {
+                    enemy.x += scale * enemy.velocityX * sec;
+                }
             }
         }
-    }
-    */
-
-    /*
-        this.test.x = this.begPo.x;
-        this.test.y = this.begPo.y;
-        this.test2.x = this.begEnd.x;
-        this.test2.y = this.begEnd.y;
         */
+
+        /*
+            this.test.x = this.begPo.x;
+            this.test.y = this.begPo.y;
+            this.test2.x = this.begEnd.x;
+            this.test2.y = this.begEnd.y;
+            */
+        this.stage.update();
     }
-    this.stage.update();
 }
 
 function gameLost() {
     console.log("Lost...");
+    this.gameRunning = false;
+    var endPopup = new createjs.Container();
+    var background = new createjs.Shape();
+    background.graphics.beginLinearGradientFill(["#e9967a", "#ff7f50"], [0,1], 0, -100, 0, 100).drawRoundRect(-200,-50,400,100,25);
+    endPopup.addChild(background);
+
+    var endString = "Game Over\nYour score is " + this.enemyCounter;
+    var text = new createjs.Text(endString, "22px Arial", "#ffffff");
+    text.x = 0;
+    text.y = - text.getMeasuredHeight()/2;
+    text.textAlign = "center";
+
+    endPopup.x = this.canvas.width/2;
+    endPopup.y = this.canvas.height/2;
+    endPopup.addChild(text);
+    this.stage.addChild(endPopup);
+    this.stage.update();
 }
 
 function handleInput() {
@@ -489,6 +505,9 @@ function dokeyup(event) {
         left = false;
     } else if (event.keyCode == 39) {
         right = false;
+    } else if (event.keyCode == 67 && this.gamepadPopupShown) {
+        resume();
+        hideGamepadMissing();
     }
     return false;
 }
@@ -521,20 +540,21 @@ function showGamepadMissing() {
         background.graphics.beginLinearGradientFill(["#e9967a", "#ff7f50"], [0,1], 0, -100, 0, 100).drawRoundRect(-200,-50,400,100,25);
         this.gamepadPopup.addChild(background);
 
-        var text = new createjs.Text("No gamepad connected", "22px Arial", "#ffffff");
+        var text = new createjs.Text("No gamepad connected\nPress \'c\' to use keyboard.", "22px Arial", "#ffffff");
         text.x = 0;
-        text.y = 0;
-        text.textBaseline = "middle";
+        text.y = - text.getMeasuredHeight()/2;
         text.textAlign = "center";
 
         this.gamepadPopup.x = this.canvas.width/2;
         this.gamepadPopup.y = this.canvas.height/2;
         this.gamepadPopup.addChild(text);
     }
+    this.gamepadPopupShown = true;
     this.stage.addChild(this.gamepadPopup);
 }
 
 function hideGamepadMissing() {
+    this.gamepadPopupShown = false;
     this.stage.removeChild(this.gamepadPopup);
 }
 

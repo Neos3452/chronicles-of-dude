@@ -4,8 +4,8 @@
 	}
 	var p = Hud.prototype = new createjs.Container();
 	
-	p.bgImage;
-	p.floorTile;
+	p.bgImage = null;
+	p.floorTile = null;
 	
 	p.Container_initialize = p.initialize;
 	p.initialize = function(hudAssets) {

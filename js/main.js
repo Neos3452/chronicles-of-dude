@@ -45,10 +45,17 @@ function loadingComplete() {
     this.gamepadText = document.getElementById("noGamepad");
     window.addEventListener('keydown', dokeydown, true);
     window.addEventListener('keyup', dokeyup, true);
-    window.addEventListener('webkitgamepadconnected',
-                      onGamepadConnect);
-    window.addEventListener('webkitgamepaddisconnected',
-                      onGamepadDisconnect);
+    if ('GamepadEvent' in window) {
+        window.addEventListener('gamepadconnected',
+                                onGamepadConnect);
+        window.addEventListener('gamepaddisconnected',
+                                onGamepadDisconnect);
+    } else if ('WebKitGamepadEvent' in window) {
+        window.addEventListener('webkitgamepadconnected',
+                                onGamepadConnect);
+        window.addEventListener('webkitgamepaddisconnected',
+                                onGamepadDisconnect);
+    }
 
     this.stage = new createjs.Stage("demoCanvas");
 
